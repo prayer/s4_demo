@@ -1,8 +1,13 @@
 <script type="text/javascript" charset="UTF-8">
+	
+	var TIME_INTERVAL = 3000; //ms
+	
 	var queryCountChart = null;
 	var queryTrendChart = null;
 
 	var trendChartTimer = null;
+	
+	var currentCagegory = null;
 
 	var countChartOptions = {
 		chart : {
@@ -32,10 +37,6 @@
 			name : 'Query Column',
 			type : 'column',
 			data : []
-		}, {
-			name : 'Query Line',
-			type : 'spline',
-			data : []
 		}],
 		plotOptions : {
 			series : {
@@ -48,8 +49,9 @@
 								clearInterval(trendChartTimer);
 							}
 							trendChartOptions.title.text = '<b>' + this.category + '</b>';
-							requestQueryTrend(this.category);
-							trendChartTimer = setInterval(requestQueryTrend, 3000);
+							currentCagegory = this.category;
+							requestQueryTrend();							
+							trendChartTimer = setInterval(requestQueryTrend, TIME_INTERVAL);
 						}
 					}
 				}
@@ -128,18 +130,15 @@
 		// queryCountChart.series[0].setData(counts, true); // no animation while using this
 
 		var data_0 = queryCountChart.series[0].data;
-		var data_1 = queryCountChart.series[1].data;
 		var i = 0;
 
 		// We do not want to fire the "redraw" everytime we update a data element.
 		for (; i < counts.length - 1; i++) {
 			data_0[i].update(counts[i], false);
-			data_1[i].update(counts[i], false);
 		}
 
 		// Fire the redraw event when update the last element.
-		data_0[i].update(counts[i], false);
-		data_1[i].update(counts[i], true);
+		data_0[i].update(counts[i], true);
 
 		//queryCountChart.redraw({duration: 1000});	// seems this approach will take no effects.
 	}
@@ -154,23 +153,21 @@
 			} else {
 				countChartOptions.xAxis.categories = keys;
 				countChartOptions.series[0].data = counts;
-				countChartOptions.series[1].data = counts;
 				queryCountChart = new Highcharts.Chart(countChartOptions);
 			}
 		});
 	}
 
-	function requestQueryTrend(query) {
+	function requestQueryTrend() {
 		if (queryTrendChart) { // already initialized
-			$.getJSON('query/trend/delta.do?query=' + query, function(data) {
+			$.getJSON('query/trend/delta.do?query=' + currentCagegory, function(data) {
 				for ( var i = 0; i < data.length; i++) {
 					var shift = trendChartOptions.series[0].data.length > 300;
 					queryTrendChart.series[0].addPoint(data[i], true, shift);
-					//console.log(trendChartOptions.series[0].data.length);
 				}
 			});
 		} else { // create the chart
-			$.getJSON('query/trend/history.do?query=' + query, function(data) {
+			$.getJSON('query/trend/history.do?query=' + currentCagegory, function(data) {
 				trendChartOptions.series[0].data = data;
 				queryTrendChart = new Highcharts.Chart(trendChartOptions);
 			});
@@ -188,7 +185,7 @@
 		});
 
 		requestQueryCount(); // initial the query count chart.
-		setInterval(requestQueryCount, 5000); // update the chart every 5 seconds.
+		setInterval(requestQueryCount, TIME_INTERVAL); // update the chart every 5 seconds.
 
 	});
 </script>

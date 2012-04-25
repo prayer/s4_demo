@@ -6,15 +6,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.yahoo.s4.demo.web.service.QueryDataService;
 import com.yahoo.s4.demo.web.util.QueryCount;
 
@@ -47,7 +50,7 @@ public class QueryDataController extends BaseController {
 	 * @param response
 	 * @throws IOException
 	 */
-	@RequestMapping(value="/list")
+	@RequestMapping(value="/list", method = RequestMethod.GET)
 	public void getTopQueries(HttpServletResponse response) throws IOException {
 		logger.info("Get top queries");
 		
@@ -74,7 +77,7 @@ public class QueryDataController extends BaseController {
 	 * @param response
 	 * @throws IOException
 	 */
-	@RequestMapping(value="/trend/history")
+	@RequestMapping(value="/trend/history", method = RequestMethod.GET)
 	public void getTrend(@RequestParam("query") String query, HttpServletResponse response) throws IOException {
 		logger.info("Get trends for: " + query);
 		
@@ -90,15 +93,53 @@ public class QueryDataController extends BaseController {
 	 * @param response
 	 * @throws IOException
 	 */
-	@RequestMapping(value="/trend/delta")
+	@RequestMapping(value="/trend/delta", method = RequestMethod.GET)
 	public void getDeltaTrend(@RequestParam("query") String query, HttpServletResponse response) throws IOException {
-		logger.info("Get trends for: " + query);
+		logger.info("Get delta trends for: " + query);
 		
 		List<Long[]> delta = dataService.getDeltaTrend(query, 1);
 		
 		String jsonStr = gson.toJson(delta);
 		response.setContentType("text/json");
 		response.getWriter().println(jsonStr);
+	}
+	
+	
+	/*
+	 * Below are the methods for receiving data from PE instances
+	 */
+	
+	/**
+	 * Set top queries' keywords and their counts
+	 * @param response
+	 * @throws IOException
+	 */
+	@RequestMapping(value="/list", method = RequestMethod.POST)
+	public void setTopQueries(HttpServletRequest request, HttpServletResponse response) throws IOException {
+		logger.info("Set top queries");
+		
+		logger.info("queries: " + request.getParameter("queries"));
+		logger.info("counts: " + request.getParameter("counts"));
+		
+		String[] queries = gson.fromJson(request.getParameter("queries"), new TypeToken<String[]>(){}.getType());
+		Integer[] counts = gson.fromJson(request.getParameter("counts"), new TypeToken<Integer[]>(){}.getType());
+		dataService.setTopQueries(queries, counts);
+	
+	}
+	
+	@RequestMapping(value="/trends", method = RequestMethod.POST)
+	public void setTrends(HttpServletRequest request, HttpServletResponse response) throws IOException {
+		logger.info("Set Trends");
+		logger.info("queries: " + request.getParameter("queries"));
+		
+		String[] queries = gson.fromJson(request.getParameter("queries"), new TypeToken<String[]>(){}.getType());
+		Integer[][] detailCounts = gson.fromJson(request.getParameter("detailCounts"), new TypeToken<Integer[][]>(){}.getType());
+		
+		if (queries.length != detailCounts.length) {
+			throw new IllegalArgumentException("Query length not equal to counts length");
+		}
+		
+		dataService.setTrends(queries, detailCounts);
 	}
 	
 }

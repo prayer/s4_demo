@@ -12,7 +12,7 @@ import com.yahoo.s4.demo.web.service.QueryDataService;
 import com.yahoo.s4.demo.web.util.QueryCount;
 
 
-@Service("userService")
+//@Service("dataService")
 public class QueryDataServiceMockImpl extends BaseServiceImpl implements QueryDataService {
 
 	private static final String[] queryKeys = new String[] {
@@ -61,5 +61,16 @@ public class QueryDataServiceMockImpl extends BaseServiceImpl implements QueryDa
 		return delta;
 	}
 
+	@Override
+	public void setTopQueries(String[] queries, Integer[] counts) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void setTrends(String[] queries, Integer[][] detailCounts) {
+		// TODO Auto-generated method stub
+		
+	}
 	
 }
